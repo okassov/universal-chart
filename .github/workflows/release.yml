@@ -1,0 +1,45 @@
+name: Release Helm Chart
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: helm/kind-action@v1.8.0
+        with:
+          version: v3.14.0
+
+      - name: Lint Chart
+        run: helm lint ./
+
+      - name: Package Chart
+        run: |
+          helm package ./ -d ./charts/
+          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Update Chart Repository
+        run: |
+          git clone --branch gh-pages https://github.com/${{ github.repository }}.git chart-repo
+          mkdir -p chart-repo/charts
+          mv ./charts/*.tgz chart-repo/charts/
+          cd chart-repo
+          helm repo index ./ --url https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/
+          git add .
+          git commit -m "Add chart version ${{ env.CHART_VERSION }}"
+          git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
