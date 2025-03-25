@@ -7,6 +7,8 @@ on:
 
 jobs:
   release:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,11 +29,14 @@ jobs:
           helm package ./ -d ./charts/
           CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
           echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
-          
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
       - name: Update Chart Repository
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
           git clone --branch gh-pages https://github.com/${{ github.repository }}.git chart-repo
           mkdir -p chart-repo/charts
           mv ./charts/*.tgz chart-repo/charts/
