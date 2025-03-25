@@ -1,7 +1,0 @@
-name: common
-apiVersion: v2
-appVersion: 0.1.0
-version: 0.1.0
-description: A Library Helm Chart for grouping common logic for universal chart. This chart is not deployable by itself.
-annotations:
-  category: Infrastructure
