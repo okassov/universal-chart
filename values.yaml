@@ -342,12 +342,37 @@ autoscaling:
   maxReplicas: ""
   targetCPU: ""
   targetMemory: ""
-## @param extraVolumes Array to add extra volumes
+## @param volumes Array of volumes that can be mounted by containers
+## e.g:
+## volumes:
+##   - name: config
+##     configMap:
+##       name: app-config
+##   - name: data
+##     persistentVolumeClaim:
+##       claimName: data-pvc
+##   - name: tmp
+##     emptyDir: {}
+##   - name: secret-volume
+##     secret:
+##       secretName: my-secret
 ##
-extraVolumes: []
-## @param extraVolumeMounts Array to add extra mount
+volumes: []
+## @param volumeMounts Array of volume mounts for the main container
+## e.g:
+## volumeMounts:
+##   - name: config
+##     mountPath: /config
+##     readOnly: true
+##   - name: data
+##     mountPath: /data
+##   - name: tmp
+##     mountPath: /tmp
+##   - name: secret-volume
+##     mountPath: /secrets
+##     readOnly: true
 ##
-extraVolumeMounts: []
+volumeMounts: []
 ## Pods Service Account
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 ##

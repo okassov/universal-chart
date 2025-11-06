@@ -120,12 +120,12 @@ spec:
           {{- else if ne .Values.resourcesPreset "none" }}
           resources: {{- include "common.resources.preset" (dict "type" .Values.resourcesPreset) | nindent 12 }}
           {{- end }}
-          {{- if .Values.extraVolumeMounts }}
-          volumeMounts: {{- include "common.tplvalues.render" ( dict "value" .Values.extraVolumeMounts "context" $) | nindent 12 }}
+          {{- if and .Values.volumeMounts (gt (len .Values.volumeMounts) 0) }}
+          volumeMounts: {{- include "common.tplvalues.render" ( dict "value" .Values.volumeMounts "context" $) | nindent 12 }}
           {{- end }}
         {{- if .Values.sidecars }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.sidecars "context" $) | nindent 8 }}
         {{- end }}
-      {{- if .Values.extraVolumes }}
-      volumes: {{- include "common.tplvalues.render" ( dict "value" .Values.extraVolumes "context" $) | nindent 8 }}
+      {{- if and .Values.volumes (gt (len .Values.volumes) 0) }}
+      volumes: {{- include "common.tplvalues.render" ( dict "value" .Values.volumes "context" $) | nindent 8 }}
       {{- end }}
