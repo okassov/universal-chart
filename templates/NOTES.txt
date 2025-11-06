@@ -5,8 +5,13 @@ APP VERSION: {{ .Chart.AppVersion }}
 ** Please be patient while the chart is being deployed **
 
 NGINX can be accessed through the following DNS name from within your cluster:
+{{- if and .Values.service.ports (gt (len .Values.service.ports) 0) }}
 
-    {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }} (port {{ .Values.service.ports.http }})
+    {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }} (port {{ (index .Values.service.ports 0).port }})
+{{- else }}
+
+    {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+{{- end }}
 
 To access NGINX from outside the cluster, follow the steps below:
 

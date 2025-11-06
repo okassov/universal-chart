@@ -1,6 +1,6 @@
 # universal
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![AppVersion: 1.1.0](https://img.shields.io/badge/AppVersion-1.1.0-informational?style=flat-square)
 
 Universal helm chart for business services
 
@@ -29,8 +29,7 @@ Universal helm chart for business services
 | configmap.annotations | object | `{}` |  |
 | configmap.data | object | `{}` |  |
 | configmap.enabled | bool | `false` |  |
-| containerPorts.http | int | `80` |  |
-| containerPorts.https | int | `8443` |  |
+| containerPorts | list | `[{"containerPort":80,"name":"http","protocol":"TCP"},{"containerPort":8443,"name":"https","protocol":"TCP"}]` | Array of container ports with name, containerPort and protocol |
 | containerSecurityContext.allowPrivilegeEscalation | bool | `false` |  |
 | containerSecurityContext.capabilities.drop[0] | string | `"ALL"` |  |
 | containerSecurityContext.enabled | bool | `false` |  |
@@ -43,7 +42,6 @@ Universal helm chart for business services
 | containerSecurityContext.seccompProfile.type | string | `"RuntimeDefault"` |  |
 | dnsConfig | object | `{}` |  |
 | dnsPolicy | string | `""` |  |
-| extraContainerPorts | list | `[]` |  |
 | extraDeploy | list | `[]` |  |
 | env | list | `[]` | Environment variables to be set on server containers. Supports both simple values and valueFrom references. |
 | envFrom | list | `[]` | List of sources to populate environment variables. Supports multiple ConfigMaps and Secrets. |
@@ -133,18 +131,12 @@ Universal helm chart for business services
 | service.clusterIP | string | `""` |  |
 | service.enabled | bool | `true` |  |
 | service.externalTrafficPolicy | string | `"Cluster"` |  |
-| service.extraPorts | list | `[]` |  |
 | service.loadBalancerClass | string | `""` |  |
 | service.loadBalancerIP | string | `""` |  |
 | service.loadBalancerSourceRanges | list | `[]` |  |
-| service.nodePorts.http | string | `""` |  |
-| service.nodePorts.https | string | `""` |  |
-| service.ports.http | int | `80` |  |
-| service.ports.https | int | `443` |  |
+| service.ports | list | `[{"name":"http","port":80,"protocol":"TCP","targetPort":"http"},{"name":"https","port":443,"protocol":"TCP","targetPort":"https"}]` | Array of service ports with name, port, targetPort, protocol and optional nodePort |
 | service.sessionAffinity | string | `"None"` |  |
 | service.sessionAffinityConfig | object | `{}` |  |
-| service.targetPort.http | string | `"http"` |  |
-| service.targetPort.https | string | `"https"` |  |
 | service.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.automountServiceAccountToken | bool | `false` |  |
@@ -158,6 +150,94 @@ Universal helm chart for business services
 | topologySpreadConstraints | list | `[]` |  |
 | updateStrategy.rollingUpdate | object | `{}` |  |
 | updateStrategy.type | string | `"RollingUpdate"` |  |
+
+## Ports Configuration
+
+Starting from version 1.1.0, the chart uses a flexible array-based approach for configuring ports instead of hardcoded `http` and `https` parameters.
+
+### Container Ports
+
+The `containerPorts` parameter allows you to define any number of container ports with custom names and protocols:
+
+```yaml
+containerPorts:
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+  - name: grpc
+    containerPort: 9090
+    protocol: TCP
+  - name: metrics
+    containerPort: 9091
+    protocol: TCP
+  - name: udp-service
+    containerPort: 5000
+    protocol: UDP
+```
+
+### Service Ports
+
+The `service.ports` parameter provides full control over service port configuration, including `nodePort` for NodePort/LoadBalancer services:
+
+```yaml
+service:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+      nodePort: 30080  # optional, only for NodePort/LoadBalancer
+    - name: grpc
+      port: 9090
+      targetPort: grpc
+      protocol: TCP
+    - name: metrics
+      port: 9091
+      targetPort: metrics
+      protocol: TCP
+```
+
+### Complete Example
+
+```yaml
+containerPorts:
+  - name: web
+    containerPort: 8080
+    protocol: TCP
+  - name: grpc
+    containerPort: 9090
+    protocol: TCP
+  - name: admin
+    containerPort: 8081
+    protocol: TCP
+
+service:
+  enabled: true
+  type: NodePort
+  ports:
+    - name: web
+      port: 80
+      targetPort: web
+      protocol: TCP
+      nodePort: 30080
+    - name: grpc
+      port: 9090
+      targetPort: grpc
+      protocol: TCP
+      nodePort: 30090
+    - name: admin
+      port: 8081
+      targetPort: admin
+      protocol: TCP
+```
+
+**Benefits:**
+- Support for any number of ports
+- TCP and UDP protocols
+- Flexible port naming
+- Integrated nodePort configuration
+- No need for separate `extraContainerPorts` or `extraPorts` parameters
 
 ## Environment Variables Configuration
 

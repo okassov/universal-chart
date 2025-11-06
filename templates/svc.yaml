@@ -37,29 +37,22 @@ spec:
   loadBalancerClass: {{ .Values.service.loadBalancerClass }}
   {{- end }}
   ports:
-    {{- if .Values.containerPorts.http }}
-    - name: http
-      port: {{ .Values.service.ports.http }}
-      targetPort: {{ .Values.service.targetPort.http }}
-      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePorts.http)) }}
-      nodePort: {{ .Values.service.nodePorts.http }}
+    {{- if and .Values.service.ports (gt (len .Values.service.ports) 0) }}
+    {{- range .Values.service.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: {{ .protocol | default "TCP" }}
+      {{- if and (or (eq $.Values.service.type "NodePort") (eq $.Values.service.type "LoadBalancer")) .nodePort }}
+      nodePort: {{ .nodePort }}
       {{- end }}
     {{- end }}
-    {{- if .Values.containerPorts.https }}
-    - name: https
-      port: {{ .Values.service.ports.https }}
-      targetPort: {{ .Values.service.targetPort.https }}
-      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePorts.https)) }}
-      nodePort: {{ .Values.service.nodePorts.https }}
-      {{- end }}
     {{- end }}
     {{- if .Values.metrics.enabled }}
     - name: metrics
       port: {{ .Values.metrics.service.port }}
       targetPort: metrics
-    {{- end }}
-    {{- if .Values.service.extraPorts }}
-    {{- include "common.tplvalues.render" (dict "value" .Values.service.extraPorts "context" $) | nindent 4 }}
+      protocol: TCP
     {{- end }}
   {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.podLabels .Values.commonLabels ) "context" . ) }}
   selector: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
