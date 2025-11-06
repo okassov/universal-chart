@@ -5,7 +5,7 @@ entries:
       category: Application
     apiVersion: v2
     appVersion: 1.1.0
-    created: "2025-11-06T18:51:25.426107915Z"
+    created: "2025-11-06T18:57:37.812406701Z"
     dependencies:
     - name: common
       repository: file://charts/common
@@ -13,7 +13,7 @@ entries:
       - common
       version: 0.x.x
     description: Universal helm chart for business services
-    digest: a900d29812463058f4a1d5ab4b7f8cacc0bfc67320092facc5d41d695006eb6a
+    digest: f8ab58fbf885eafcc982f7e7a0724aceb968b81f3c392f711812a0a2c7cd7914
     name: universal
     urls:
     - https://raw.githubusercontent.com/okassov/universal-chart/gh-pages/charts/universal-1.1.0.tgz
@@ -22,7 +22,7 @@ entries:
       category: Application
     apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-11-06T18:51:25.421851248Z"
+    created: "2025-11-06T18:57:37.808318613Z"
     dependencies:
     - name: common
       repository: file://charts/common
@@ -39,7 +39,7 @@ entries:
       category: Application
     apiVersion: v2
     appVersion: 0.1.2
-    created: "2025-11-06T18:51:25.418904006Z"
+    created: "2025-11-06T18:57:37.805581659Z"
     dependencies:
     - name: common
       repository: file://charts/common
@@ -56,7 +56,7 @@ entries:
       category: Application
     apiVersion: v2
     appVersion: 0.1.0
-    created: "2025-11-06T18:51:25.415217783Z"
+    created: "2025-11-06T18:57:37.802366593Z"
     dependencies:
     - name: common
       repository: file://charts/common
@@ -69,4 +69,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/okassov/universal-chart/gh-pages/charts/universal-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-06T18:51:25.411726806Z"
+generated: "2025-11-06T18:57:37.799105543Z"
