@@ -91,19 +91,29 @@ hostAliases: []
 ##
 command: []
 args: []
-## @param extraEnvVars Extra environment variables to be set on server containers
+## @param env Environment variables to be set on server containers
 ## E.g:
-## extraEnvVars:
+## env:
 ##   - name: FOO
 ##     value: BAR
+##   - name: DATABASE_URL
+##     valueFrom:
+##       secretKeyRef:
+##         name: my-secret
+##         key: db-url
 ##
-extraEnvVars: []
-## @param extraEnvVarsCM ConfigMap with extra environment variables
+env: []
+## @param envFrom List of sources to populate environment variables in the container
+## E.g:
+## envFrom:
+##   - configMapRef:
+##       name: my-configmap
+##   - secretRef:
+##       name: my-secret
+##   - configMapRef:
+##       name: another-configmap
 ##
-extraEnvVarsCM: ""
-## @param extraEnvVarsSecret Secret with extra environment variables
-##
-extraEnvVarsSecret: ""
+envFrom: []
 ## @section server deployment parameters
 
 ## @param replicaCount Number of server replicas to deploy
