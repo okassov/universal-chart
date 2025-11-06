@@ -269,19 +269,26 @@ containerSecurityContext:
   seccompProfile:
     type: "RuntimeDefault"
 ## Configures the ports server listens on
-## @param containerPorts.http Sets http port inside server container
-## @param containerPorts.https Sets https port inside server container
+## @param containerPorts Array of container ports
+## e.g:
+## containerPorts:
+##   - name: http
+##     containerPort: 80
+##     protocol: TCP
+##   - name: https
+##     containerPort: 8443
+##     protocol: TCP
+##   - name: grpc
+##     containerPort: 9090
+##     protocol: TCP
 ##
 containerPorts:
-  http: 80
-  https: 8443
-## @param extraContainerPorts Array of additional container ports for the server container
-## e.g:
-## extraContainerPorts:
-##   - name: grpc
-##     containerPort: 4317
-##
-extraContainerPorts: []
+  - name: http
+    containerPort: 80
+    protocol: TCP
+  - name: https
+    containerPort: 8443
+    protocol: TCP
 ## server containers' resource requests and limits
 ## ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
 ## We usually recommend not to specify default resources and to leave this as a conscious
@@ -402,26 +409,32 @@ service:
   ## @param service.type Service type
   ##
   type: ClusterIP
-  ## @param service.ports.http Service HTTP port
-  ## @param service.ports.https Service HTTPS port
+  ## @param service.ports Array of service ports
+  ## e.g:
+  ## ports:
+  ##   - name: http
+  ##     port: 80
+  ##     targetPort: http
+  ##     protocol: TCP
+  ##     nodePort: 30080  # optional, only for NodePort/LoadBalancer
+  ##   - name: https
+  ##     port: 443
+  ##     targetPort: https
+  ##     protocol: TCP
+  ##   - name: grpc
+  ##     port: 9090
+  ##     targetPort: grpc
+  ##     protocol: TCP
   ##
   ports:
-    http: 80
-    https: 443
-  ##
-  ## @param service.nodePorts [object] Specify the nodePort(s) value(s) for the LoadBalancer and NodePort service types.
-  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-  ##
-  nodePorts:
-    http: ""
-    https: ""
-  ## @param service.targetPort [object] Target port reference value for the Loadbalancer service types can be specified explicitly.
-  ## Listeners for the Loadbalancer can be custom mapped to the http or https service.
-  ## Example: Mapping the https listener to targetPort http [http: https]
-  ##
-  targetPort:
-    http: http
-    https: https
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: https
+      protocol: TCP
   ## @param service.clusterIP server service Cluster IP
   ## e.g.:
   ## clusterIP: None
@@ -442,9 +455,6 @@ service:
   ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
   ##
   loadBalancerClass: ""
-  ## @param service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
-  ##
-  extraPorts: []
   ## @param service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
   ## If "ClientIP", consecutive client requests will be directed to the same Pod
   ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies

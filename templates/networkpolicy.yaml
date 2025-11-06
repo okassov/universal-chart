@@ -31,12 +31,15 @@ spec:
     {{- end }}
   ingress:
     - ports:
-        - port: {{ .Values.containerPorts.http }}
-        {{- if .Values.containerPorts.https }}
-        - port: {{ .Values.containerPorts.https }}
+        {{- if and .Values.containerPorts (gt (len .Values.containerPorts) 0) }}
+        {{- range .Values.containerPorts }}
+        - port: {{ .containerPort }}
+          protocol: {{ .protocol | default "TCP" }}
+        {{- end }}
         {{- end }}
         {{- if .Values.metrics.enabled }}
-        - port: {{ .Values.metrics.containerPorts.metrics }}
+        - port: {{ .Values.metrics.port }}
+          protocol: TCP
         {{- end }}
       {{- if not .Values.networkPolicy.allowExternal }}
       from:
