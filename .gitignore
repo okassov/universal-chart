@@ -6,3 +6,6 @@ test-values.yaml
 # Temporary files
 *.tmp
 .DS_Store
+
+# Claude Code instructions (local only)
+CLAUDE.md

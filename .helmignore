@@ -24,6 +24,7 @@
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # CI/CD
 .gitlab-ci.yml
