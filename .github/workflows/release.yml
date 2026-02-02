@@ -2,6 +2,8 @@ name: Release Helm Chart
 
 on:
   push:
+    branches:
+      - main
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
@@ -10,7 +12,7 @@ env:
   CHART_NAME: universal
 
 jobs:
-  release:
+  test-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,14 +30,21 @@ jobs:
         with:
           version: v3.14.0
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: |
-          CHART_VERSION=${GITHUB_REF#refs/tags/}
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            CHART_VERSION=${GITHUB_REF#refs/tags/}
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+          else
+            CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+          fi
           echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
-          echo "Releasing version: $CHART_VERSION"
+          echo "Chart version: $CHART_VERSION"
 
       - name: Verify Chart.yaml version matches tag
+        if: steps.version.outputs.is_tag == 'true'
         run: |
           TAG_VERSION=${{ steps.version.outputs.version }}
           CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
@@ -54,13 +63,16 @@ jobs:
           echo "CHART_PACKAGE=${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz" >> $GITHUB_ENV
 
       - name: Login to GitHub Container Registry
+        if: steps.version.outputs.is_tag == 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
 
       - name: Push Chart to GHCR
+        if: steps.version.outputs.is_tag == 'true'
         run: |
           helm push ${{ env.CHART_PACKAGE }} oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
 
       - name: Create GitHub Release
+        if: steps.version.outputs.is_tag == 'true'
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
@@ -84,5 +96,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Logout from GHCR
-        if: always()
+        if: always() && steps.version.outputs.is_tag == 'true'
         run: helm registry logout ${{ env.REGISTRY }}

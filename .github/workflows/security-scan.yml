@@ -31,7 +31,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -47,6 +47,9 @@ jobs:
   kubelinter:
     name: Kube-linter Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout code
@@ -62,6 +65,7 @@ jobs:
           helm template test-release . > rendered.yaml
 
       - name: Scan with kube-linter
+        id: kube-linter
         uses: stackrox/kube-linter-action@v1
         with:
           file: rendered.yaml
@@ -69,8 +73,17 @@ jobs:
           output-file: kube-linter-results.sarif
         continue-on-error: true
 
+      - name: Check if SARIF file exists and is valid
+        id: check-sarif
+        run: |
+          if [ -f kube-linter-results.sarif ] && [ -s kube-linter-results.sarif ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload kube-linter results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: steps.check-sarif.outputs.valid == 'true'
         with:
           sarif_file: kube-linter-results.sarif
