@@ -23,13 +23,13 @@ annotations:
   # Artifact Hub annotations
   artifacthub.io/changes: |
     - kind: added
-      description: Added support for custom Prometheus alerts via PrometheusRule CRD with multiple rule groups
-    - kind: changed
-      description: Improved ServiceMonitor configuration with better label management and path customization
-    - kind: changed
-      description: Enhanced metrics section with configurable endpoint path and port
+      description: CronJob support for scheduled tasks - create multiple independent CronJobs alongside Deployment
     - kind: added
-      description: Comprehensive documentation for Prometheus Operator integration and custom alerting
+      description: Production-ready CronJob configuration with resources, volumes, security contexts, and scheduling
+    - kind: changed
+      description: Updated NOTES.txt to display deployed CronJobs with management commands
+    - kind: changed
+      description: Improved post-install instructions with universal application guidance
   artifacthub.io/links: |
     - name: Chart Repository
       url: https://github.com/okassov/universal-chart
