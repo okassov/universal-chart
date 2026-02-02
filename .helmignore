@@ -37,3 +37,6 @@ LICENSE
 
 # Testing
 .kube-linter.yaml
+
+# Build files
+Makefile
