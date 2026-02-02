@@ -87,6 +87,28 @@ Prometheus Alerts: ✓ Enabled
   Custom alerts are configured in PrometheusRule
 {{- end }}
 {{- end }}
+{{- if .Values.cronjobs }}
+
+───────────────────────────────────────────────────────────────────────────────
+⏰ CRONJOBS
+───────────────────────────────────────────────────────────────────────────────
+
+Scheduled jobs deployed:
+{{- range .Values.cronjobs }}
+  - {{ include "common.names.fullname" $ }}-{{ .name }}
+    Schedule: {{ .schedule }}
+{{- end }}
+
+Check CronJob status:
+  kubectl get cronjobs --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.names.name" . }}
+
+View recent jobs:
+  kubectl get jobs --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.names.name" . }}
+
+View job logs:
+  kubectl logs --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.names.name" . }},app.kubernetes.io/component=cronjob-<name>
+
+{{- end }}
 
 ───────────────────────────────────────────────────────────────────────────────
 📚 RESOURCES

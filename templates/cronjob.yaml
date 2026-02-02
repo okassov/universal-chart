@@ -1,0 +1,93 @@
+{{- range .Values.cronjobs }}
+{{- /* Validation of required fields */ -}}
+{{- if not .name }}
+  {{- fail "cronjobs[].name is required" }}
+{{- end }}
+{{- if not .schedule }}
+  {{- fail (printf "cronjobs[%s].schedule is required" .name) }}
+{{- end }}
+{{- if not .image }}
+  {{- fail (printf "cronjobs[%s].image is required" .name) }}
+{{- end }}
+{{- if not (or .command .args) }}
+  {{- fail (printf "cronjobs[%s].command or cronjobs[%s].args must be specified" .name .name) }}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "common.names.fullname" $ }}-{{ .name }}
+  namespace: {{ include "common.names.namespace" $ | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" $.Values.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: cronjob-{{ .name }}
+  {{- if $.Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $.Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .schedule | quote }}
+  concurrencyPolicy: {{ .concurrencyPolicy | default "Allow" }}
+  suspend: {{ .suspend | default false }}
+  successfulJobsHistoryLimit: {{ .successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .failedJobsHistoryLimit | default 1 }}
+  {{- if .startingDeadlineSeconds }}
+  startingDeadlineSeconds: {{ .startingDeadlineSeconds }}
+  {{- end }}
+  jobTemplate:
+    metadata:
+      labels: {{- include "common.labels.standard" ( dict "customLabels" $.Values.commonLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: cronjob-{{ .name }}
+    spec:
+      {{- if .backoffLimit }}
+      backoffLimit: {{ .backoffLimit }}
+      {{- end }}
+      {{- if .activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ .activeDeadlineSeconds }}
+      {{- end }}
+      {{- if .ttlSecondsAfterFinished }}
+      ttlSecondsAfterFinished: {{ .ttlSecondsAfterFinished }}
+      {{- end }}
+      template:
+        spec:
+          restartPolicy: {{ .restartPolicy | default "OnFailure" }}
+          serviceAccountName: {{ include "server.serviceAccountName" $ }}
+          {{- if .podSecurityContext }}
+          securityContext: {{- toYaml .podSecurityContext | nindent 12 }}
+          {{- end }}
+          {{- if .nodeSelector }}
+          nodeSelector: {{- toYaml .nodeSelector | nindent 12 }}
+          {{- end }}
+          {{- if .tolerations }}
+          tolerations: {{- toYaml .tolerations | nindent 12 }}
+          {{- end }}
+          {{- if .affinity }}
+          affinity: {{- toYaml .affinity | nindent 12 }}
+          {{- end }}
+          {{- if .volumes }}
+          volumes: {{- toYaml .volumes | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: {{ .name }}
+              image: {{ printf "%s/%s:%s" (.image.registry | default "docker.io") .image.repository .image.tag }}
+              imagePullPolicy: {{ .image.pullPolicy | default "IfNotPresent" }}
+              {{- if .command }}
+              command: {{- toYaml .command | nindent 16 }}
+              {{- end }}
+              {{- if .args }}
+              args: {{- toYaml .args | nindent 16 }}
+              {{- end }}
+              {{- if .env }}
+              env: {{- toYaml .env | nindent 16 }}
+              {{- end }}
+              {{- if .envFrom }}
+              envFrom: {{- toYaml .envFrom | nindent 16 }}
+              {{- end }}
+              {{- if .resources }}
+              resources: {{- toYaml .resources | nindent 16 }}
+              {{- end }}
+              {{- if .volumeMounts }}
+              volumeMounts: {{- toYaml .volumeMounts | nindent 16 }}
+              {{- end }}
+              {{- if .containerSecurityContext }}
+              securityContext: {{- toYaml .containerSecurityContext | nindent 16 }}
+              {{- end }}
+{{- end }}

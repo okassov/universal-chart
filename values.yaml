@@ -753,3 +753,113 @@ metrics:
     ##
     groups: []
 
+## @section CronJob parameters
+## @param cronjobs Array of CronJob configurations for scheduled tasks
+## Each cronjob is an independent scheduled job with full configuration.
+## CronJobs run alongside the main Deployment for periodic tasks.
+##
+cronjobs: []
+  ## Example CronJob configurations:
+  ##
+  ## - name: backup
+  ##   schedule: "0 2 * * *"  # Daily at 2 AM
+  ##
+  ##   ## CronJob specific parameters
+  ##   concurrencyPolicy: Forbid  # Allow|Forbid|Replace (default: Allow)
+  ##   suspend: false  # Pause scheduling (default: false)
+  ##   successfulJobsHistoryLimit: 3  # Keep successful jobs (default: 3)
+  ##   failedJobsHistoryLimit: 1  # Keep failed jobs (default: 1)
+  ##   startingDeadlineSeconds: 300  # Deadline to start if missed
+  ##
+  ##   ## Job parameters
+  ##   restartPolicy: OnFailure  # OnFailure|Never (default: OnFailure)
+  ##   backoffLimit: 3  # Retry attempts
+  ##   activeDeadlineSeconds: 3600  # Max job duration in seconds
+  ##   ttlSecondsAfterFinished: 86400  # Cleanup after completion
+  ##
+  ##   ## Container image (required)
+  ##   image:
+  ##     registry: docker.io
+  ##     repository: myapp/backup
+  ##     tag: v1.0.0
+  ##     pullPolicy: IfNotPresent
+  ##
+  ##   ## Container configuration (required: command or args)
+  ##   command: ["/bin/sh"]
+  ##   args: ["-c", "/scripts/backup.sh"]
+  ##
+  ##   ## Environment variables
+  ##   env:
+  ##     - name: BACKUP_PATH
+  ##       value: /data/backups
+  ##   envFrom: []
+  ##
+  ##   ## Resources
+  ##   resources:
+  ##     limits:
+  ##       cpu: 500m
+  ##       memory: 512Mi
+  ##     requests:
+  ##       cpu: 100m
+  ##       memory: 128Mi
+  ##
+  ##   ## Volumes
+  ##   volumes:
+  ##     - name: data
+  ##       persistentVolumeClaim:
+  ##         claimName: app-data-pvc
+  ##   volumeMounts:
+  ##     - name: data
+  ##       mountPath: /data
+  ##
+  ##   ## Security contexts
+  ##   podSecurityContext:
+  ##     runAsNonRoot: true
+  ##     fsGroup: 1001
+  ##   containerSecurityContext:
+  ##     runAsUser: 1001
+  ##     readOnlyRootFilesystem: true
+  ##     allowPrivilegeEscalation: false
+  ##     capabilities:
+  ##       drop:
+  ##         - ALL
+  ##
+  ##   ## Scheduling
+  ##   nodeSelector: {}
+  ##   tolerations: []
+  ##   affinity: {}
+  ##
+  ## - name: cleanup
+  ##   schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+  ##   concurrencyPolicy: Forbid
+  ##   image:
+  ##     registry: docker.io
+  ##     repository: myapp/cleanup
+  ##     tag: latest
+  ##   command: ["cleanup"]
+  ##   args: ["--days=30"]
+  ##   resources:
+  ##     limits:
+  ##       cpu: 200m
+  ##       memory: 256Mi
+  ##
+  ## - name: process-data
+  ##   schedule: "*/15 * * * *"  # Every 15 minutes
+  ##   concurrencyPolicy: Replace
+  ##   activeDeadlineSeconds: 600
+  ##   image:
+  ##     registry: docker.io
+  ##     repository: myapp/processor
+  ##     tag: v2.1.0
+  ##   args: ["process", "--batch-size=1000"]
+  ##   resources:
+  ##     requests:
+  ##       cpu: 500m
+  ##       memory: 1Gi
+  ##   nodeSelector:
+  ##     workload-type: batch
+  ##   tolerations:
+  ##     - key: batch-workload
+  ##       operator: Exists
+  ##       effect: NoSchedule
+

@@ -43,3 +43,7 @@ LICENSE
 
 # Build files
 Makefile
+
+# Development directories
+docs/
+examples/
