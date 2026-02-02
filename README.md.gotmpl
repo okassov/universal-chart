@@ -37,6 +37,184 @@ helm install my-release ./universal
 
 Visit [Artifact Hub](https://artifacthub.io/packages/search?repo=universal-chart) for more installation options and documentation.
 
+## CronJob Support
+
+This chart supports creating multiple CronJob resources alongside the main Deployment for scheduled tasks like backups, cleanups, and data processing.
+
+### Features
+
+- **Multiple CronJobs**: Define multiple independent scheduled jobs via `cronjobs[]` array
+- **Full Configuration**: Each CronJob has complete control over image, resources, volumes, security, and scheduling
+- **Shared ServiceAccount**: CronJobs use the same ServiceAccount as the main Deployment
+- **Production-Ready**: Support for concurrency policies, history limits, deadlines, and TTL
+- **Independent Execution**: CronJobs run independently without inheriting configuration from the main application
+
+### Quick Start
+
+Add CronJobs to your values:
+
+```yaml
+cronjobs:
+  - name: backup
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    image:
+      registry: docker.io
+      repository: myapp/backup
+      tag: v1.0.0
+    command: ["backup"]
+    resources:
+      requests:
+        memory: 256Mi
+```
+
+### Complete Example
+
+```yaml
+cronjobs:
+  # Daily backup job
+  - name: backup
+    schedule: "0 2 * * *"
+    concurrencyPolicy: Forbid  # Don't allow concurrent runs
+    successfulJobsHistoryLimit: 7
+    failedJobsHistoryLimit: 3
+
+    image:
+      registry: docker.io
+      repository: myapp/backup
+      tag: v1.0.0
+
+    command: ["/bin/sh"]
+    args: ["-c", "/scripts/backup.sh"]
+
+    env:
+      - name: BACKUP_PATH
+        value: /data/backups
+
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+
+    podSecurityContext:
+      runAsNonRoot: true
+      fsGroup: 1001
+    containerSecurityContext:
+      runAsUser: 1001
+      readOnlyRootFilesystem: true
+
+  # Weekly cleanup job
+  - name: cleanup
+    schedule: "0 3 * * 0"  # Sunday at 3 AM
+    concurrencyPolicy: Forbid
+
+    image:
+      registry: docker.io
+      repository: myapp/cleanup
+      tag: latest
+
+    command: ["cleanup"]
+    args: ["--days=30"]
+
+    resources:
+      limits:
+        memory: 256Mi
+
+  # Frequent processing job
+  - name: process-data
+    schedule: "*/15 * * * *"  # Every 15 minutes
+    concurrencyPolicy: Replace  # Replace old job if still running
+    activeDeadlineSeconds: 600  # Kill after 10 minutes
+
+    image:
+      registry: docker.io
+      repository: myapp/processor
+      tag: v2.1.0
+
+    args: ["process", "--batch-size=1000"]
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+    nodeSelector:
+      workload-type: batch
+```
+
+### Configuration Options
+
+Each CronJob supports:
+
+**Required Parameters:**
+- `name`: Unique identifier for the CronJob
+- `schedule`: Cron schedule expression
+- `image`: Container image (registry, repository, tag)
+- `command` or `args`: What to execute
+
+**CronJob Parameters:**
+- `concurrencyPolicy`: Allow, Forbid, or Replace (default: Allow)
+- `suspend`: Pause scheduling (default: false)
+- `successfulJobsHistoryLimit`: Jobs to keep (default: 3)
+- `failedJobsHistoryLimit`: Failed jobs to keep (default: 1)
+- `startingDeadlineSeconds`: Deadline to start if missed
+
+**Job Parameters:**
+- `restartPolicy`: OnFailure or Never (default: OnFailure)
+- `backoffLimit`: Retry attempts
+- `activeDeadlineSeconds`: Maximum job duration
+- `ttlSecondsAfterFinished`: Cleanup delay after completion
+
+**Pod Configuration:**
+- `env`, `envFrom`: Environment variables
+- `resources`: CPU and memory limits/requests
+- `volumes`, `volumeMounts`: Storage configuration
+- `podSecurityContext`, `containerSecurityContext`: Security settings
+- `nodeSelector`, `tolerations`, `affinity`: Scheduling constraints
+
+### Management Commands
+
+After deployment, manage CronJobs with:
+
+```bash
+# List CronJobs
+kubectl get cronjobs -n <namespace>
+
+# View recent jobs
+kubectl get jobs -n <namespace>
+
+# Check job logs
+kubectl logs -n <namespace> -l app.kubernetes.io/component=cronjob-<name>
+
+# Suspend a CronJob
+kubectl patch cronjob <name> -p '{"spec":{"suspend":true}}'
+
+# Resume a CronJob
+kubectl patch cronjob <name> -p '{"spec":{"suspend":false}}'
+
+# Manually trigger a job
+kubectl create job --from=cronjob/<name> manual-run-$(date +%s)
+```
+
+### Best Practices
+
+1. **Concurrency Control**: Use `concurrencyPolicy: Forbid` for jobs that shouldn't overlap
+2. **Resource Limits**: Always set resources to prevent resource exhaustion
+3. **Security Context**: Run with `runAsNonRoot: true` and drop all capabilities
+4. **History Limits**: Keep reasonable history for debugging (3-7 successful, 1-3 failed)
+5. **Deadlines**: Set `activeDeadlineSeconds` to prevent hanging jobs
+6. **Node Selection**: Use `nodeSelector` or `tolerations` for batch workload nodes
+
 ## Monitoring and Alerting
 
 This chart supports Prometheus Operator CRDs for metrics collection and custom alerting.
