@@ -410,6 +410,42 @@ metrics:
               description: "Error rate: {{`{{ $value | humanizePercentage }}`}}"
 ```
 
+## Roadmap
+
+Future enhancements planned for the universal chart:
+
+### Autoscaling
+
+- [ ] **VPA (VerticalPodAutoscaler)** - Automatic container resource recommendations and adjustments
+  - Template: `templates/vpa.yaml`
+  - Support for `Auto`, `Initial`, `Off` update modes
+  - Resource policies and min/max constraints
+  - Integration with existing HPA
+
+- [ ] **KEDA (Kubernetes Event Driven Autoscaling)** - Event-driven autoscaling beyond CPU/Memory
+  - ScaledObject support for event-based triggers
+  - Multiple scalers: Kafka, RabbitMQ, Redis, Prometheus, Cron, HTTP, etc.
+  - Advanced scaling strategies and fallback options
+  - Integration with HPA for seamless operation
+
+### Networking (Breaking Change)
+
+- [ ] **Gateway API Support** - Modern Kubernetes networking replacement for Ingress
+  - Add `templates/gateway.yaml` for HTTPRoute, GRPCRoute resources
+  - Support for advanced routing (header-based, weight-based, mirroring)
+  - Better multi-tenancy with Gateway sharing
+  - TLS termination and certificate management
+
+- [ ] **Deprecation Plan for Ingress**
+  - **v1.x - v2.0**: Both Ingress and Gateway API supported
+  - **v2.0**: Mark `ingress.*` values as deprecated (add warnings)
+  - **v3.0**: Remove Ingress support entirely, Gateway API only
+  - Migration guide and compatibility layer during transition
+
+## Contributions Welcome!
+
+Interested in contributing? Check out our [contribution guidelines](https://github.com/okassov/universal-chart/blob/main/CONTRIBUTING.md) or open an issue to discuss new features.
+
 {{ template "chart.requirementsSection" . }}
 
 {{ template "chart.valuesSection" . }}
