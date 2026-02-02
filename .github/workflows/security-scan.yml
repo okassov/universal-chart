@@ -60,30 +60,33 @@ jobs:
         with:
           version: v3.14.0
 
+      - name: Install kube-linter
+        run: |
+          curl -L https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar xz
+          sudo mv kube-linter /usr/local/bin/
+
       - name: Template chart
         run: |
           helm template test-release . > rendered.yaml
 
       - name: Scan with kube-linter
         id: kube-linter
-        uses: stackrox/kube-linter-action@v1
-        with:
-          file: rendered.yaml
-          format: sarif
-          output-file: kube-linter-results.sarif
-        continue-on-error: true
-
-      - name: Check if SARIF file exists and is valid
-        id: check-sarif
         run: |
+          kube-linter lint rendered.yaml --format sarif > kube-linter-results.sarif || true
           if [ -f kube-linter-results.sarif ] && [ -s kube-linter-results.sarif ]; then
-            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "has_results=true" >> $GITHUB_OUTPUT
+            echo "Kube-linter scan completed with results"
           else
-            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "has_results=false" >> $GITHUB_OUTPUT
+            echo "Kube-linter scan completed with no results"
           fi
+
+      - name: Display kube-linter results
+        if: steps.kube-linter.outputs.has_results == 'true'
+        run: kube-linter lint rendered.yaml --format plain
 
       - name: Upload kube-linter results
         uses: github/codeql-action/upload-sarif@v4
-        if: steps.check-sarif.outputs.valid == 'true'
+        if: steps.kube-linter.outputs.has_results == 'true'
         with:
           sarif_file: kube-linter-results.sarif
