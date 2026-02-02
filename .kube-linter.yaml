@@ -10,14 +10,17 @@ checks:
     # Security context settings should be user-configurable
     - "no-read-only-root-fs"
     - "run-as-non-root"
+    # Annotations and labels should be user-configurable
+    - "required-annotation-email"
+    - "required-label-owner"
+    # Resource requirements should be optional in universal chart
+    - "unset-cpu-requirements"
+    - "unset-memory-requirements"
 
-  # Keep important checks enabled
+  # Keep critical checks enabled
   include:
     - "deprecated-service-account-field"
     - "docker-sock"
     - "env-var-secret"
     - "mismatching-selector"
-    - "required-annotation-email"
-    - "required-label-owner"
-    - "unset-cpu-requirements"
-    - "unset-memory-requirements"
+    - "writable-host-mount"
