@@ -72,7 +72,7 @@ jobs:
       - name: Scan with kube-linter
         id: kube-linter
         run: |
-          kube-linter lint rendered.yaml --format sarif > kube-linter-results.sarif || true
+          kube-linter lint rendered.yaml --config .kube-linter.yaml --format sarif > kube-linter-results.sarif || true
           if [ -f kube-linter-results.sarif ] && [ -s kube-linter-results.sarif ]; then
             echo "has_results=true" >> $GITHUB_OUTPUT
             echo "Kube-linter scan completed with results"
@@ -83,7 +83,7 @@ jobs:
 
       - name: Display kube-linter results
         if: steps.kube-linter.outputs.has_results == 'true'
-        run: kube-linter lint rendered.yaml --format plain
+        run: kube-linter lint rendered.yaml --config .kube-linter.yaml --format plain
 
       - name: Upload kube-linter results
         uses: github/codeql-action/upload-sarif@v4

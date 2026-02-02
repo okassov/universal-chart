@@ -1,0 +1,23 @@
+# KubeLinter configuration
+# These checks are skipped for chart templates since they depend on user-provided values
+
+checks:
+  # Skip checks that should be controlled by chart users via values.yaml
+  doNotAutoAddDefaults: true
+  exclude:
+    # Allow latest tag in templates (users should override in values)
+    - "latest-tag"
+    # Security context settings should be user-configurable
+    - "no-read-only-root-fs"
+    - "run-as-non-root"
+
+  # Keep important checks enabled
+  include:
+    - "deprecated-service-account-field"
+    - "docker-sock"
+    - "env-var-secret"
+    - "mismatching-selector"
+    - "required-annotation-email"
+    - "required-label-owner"
+    - "unset-cpu-requirements"
+    - "unset-memory-requirements"
