@@ -51,7 +51,7 @@ spec:
     {{- if .Values.metrics.enabled }}
     - name: metrics
       port: {{ .Values.metrics.service.port }}
-      targetPort: metrics
+      targetPort: {{ .Values.metrics.port | default "metrics" }}
       protocol: TCP
     {{- end }}
   {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.podLabels .Values.commonLabels ) "context" . ) }}

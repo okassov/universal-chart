@@ -632,91 +632,124 @@ configmap:
 
 ## @section Metrics parameters
 
-## Metrics
+## Metrics configuration
+## @param metrics.enabled Enable metrics collection and monitoring resources
+## @param metrics.port Container port for metrics endpoint (if different from service port)
+## @param metrics.path Metrics endpoint path
 ##
 metrics:
-  ## @param metrics.enabled Start a Prometheus exporter sidecar container
-  ##
   enabled: false
-  ## @param metrics.port server Container Status Port scraped by Prometheus Exporter
-  ## Defaults to specified http port
-  ##
   port: ""
-  ## Prometheus exporter service parameters
+  path: /metrics
+
+  ## Metrics Service configuration
+  ## @param metrics.service.port Service port for metrics endpoint
+  ## @param metrics.service.annotations Annotations for metrics service (for legacy Prometheus scraping, not needed with ServiceMonitor)
   ##
   service:
-    ## @param metrics.service.port server Prometheus exporter service port
-    ##
     port: 8081
-    ## @param metrics.service.annotations [object] Annotations for the Prometheus exporter service
-    ##
     annotations:
       prometheus.io/scrape: "true"
-      prometheus.io/port: "{{ .Values.metrics.service.port }}"
+      prometheus.io/port: "8081"
       prometheus.io/path: "/metrics"
-  ## Prometheus Operator ServiceMonitor configuration
+
+  ## ServiceMonitor configuration for Prometheus Operator
+  ## @param metrics.serviceMonitor.enabled Create ServiceMonitor resource for Prometheus Operator
+  ## @param metrics.serviceMonitor.namespace Namespace for ServiceMonitor (defaults to release namespace)
+  ## @param metrics.serviceMonitor.labels Additional labels for ServiceMonitor (IMPORTANT: must match Prometheus serviceMonitorSelector)
+  ## @param metrics.serviceMonitor.selector Additional selector to match services (merged with chart matchLabels, leave empty to use defaults)
+  ## @param metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in Prometheus
+  ## @param metrics.serviceMonitor.interval Interval at which metrics should be scraped (e.g., 30s, 1m)
+  ## @param metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended (e.g., 10s)
+  ## @param metrics.serviceMonitor.honorLabels Honor labels from the scraped metrics
+  ## @param metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+  ## @param metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
   ##
   serviceMonitor:
-    ## @param metrics.serviceMonitor.enabled Creates a Prometheus Operator ServiceMonitor (also requires `metrics.enabled` to be `true`)
-    ##
     enabled: false
-    ## @param metrics.serviceMonitor.namespace Namespace in which Prometheus is running
-    ##
     namespace: ""
-    ## @param metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
-    ##
-    jobLabel: ""
-    ## @param metrics.serviceMonitor.interval Interval at which metrics should be scraped.
-    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
-    ## e.g:
-    ## interval: 10s
-    ##
-    interval: ""
-    ## @param metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
-    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
-    ## e.g:
-    ## scrapeTimeout: 10s
-    ##
-    scrapeTimeout: ""
-    ## @param metrics.serviceMonitor.selector Prometheus instance selector labels
-    ##
-    ## selector:
-    ##   prometheus: my-prometheus
-    ##
-    selector: {}
-    ## @param metrics.serviceMonitor.labels Additional labels that can be used so PodMonitor will be discovered by Prometheus
+    ## IMPORTANT: Labels must match Prometheus serviceMonitorSelector
+    ## Example for kube-prometheus-stack:
+    ##   release: prometheus-operator
+    ## Example for prometheus-operator:
+    ##   prometheus: kube-prometheus
     ##
     labels: {}
-    ## @param metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+    selector: {}
+    jobLabel: ""
+    interval: ""
+    scrapeTimeout: ""
+    honorLabels: false
+    ## Example relabelings:
+    ## relabelings:
+    ##   - sourceLabels: [__meta_kubernetes_pod_node_name]
+    ##     targetLabel: node
     ##
     relabelings: []
-    ## @param metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+    ## Example metricRelabelings:
+    ## metricRelabelings:
+    ##   - sourceLabels: [__name__]
+    ##     regex: 'go_.*'
+    ##     action: drop
     ##
     metricRelabelings: []
-    ## @param metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
-    ##
-    honorLabels: false
-  ## Prometheus Operator PrometheusRule configuration
+
+  ## PrometheusRule configuration for Prometheus Operator
+  ## @param metrics.prometheusRule.enabled Create PrometheusRule resource for alerting and recording rules
+  ## @param metrics.prometheusRule.namespace Namespace for PrometheusRule (defaults to release namespace)
+  ## @param metrics.prometheusRule.additionalLabels Additional labels for PrometheusRule (IMPORTANT: must match Prometheus ruleSelector)
+  ## @param metrics.prometheusRule.groups Array of rule groups with alerting and/or recording rules
   ##
   prometheusRule:
-    ## @param metrics.prometheusRule.enabled if `true`, creates a Prometheus Operator PrometheusRule (also requires `metrics.enabled` to be `true` and `metrics.prometheusRule.rules`)
-    ##
     enabled: false
-    ## @param metrics.prometheusRule.namespace Namespace for the PrometheusRule Resource (defaults to the Release Namespace)
-    ##
     namespace: ""
-    ## @param metrics.prometheusRule.additionalLabels Additional labels that can be used so PrometheusRule will be discovered by Prometheus
+    ## IMPORTANT: Labels must match Prometheus ruleSelector
+    ## Example for kube-prometheus-stack:
+    ##   release: prometheus-operator
+    ## Example for prometheus-operator:
+    ##   prometheus: kube-prometheus
+    ##   role: alert-rules
     ##
     additionalLabels: {}
-    ## @param metrics.prometheusRule.rules Prometheus Rule definitions
-    ##   - alert: LowInstance
-    ##     expr: up{service="{{ template "common.names.fullname" . }}"} < 1
-    ##     for: 1m
-    ##     labels:
-    ##       severity: critical
-    ##     annotations:
-    ##       description: Service {{ template "common.names.fullname" . }} Tomcat is down since 1m.
-    ##       summary: Tomcat instance is down.
+    ## Rule groups - organize your alerts and recording rules into logical groups
+    ## Each group can have its own evaluation interval
+    ## Example:
+    ## groups:
+    ##   - name: application-availability
+    ##     interval: 30s
+    ##     rules:
+    ##       - alert: HighErrorRate
+    ##         expr: |
+    ##           (
+    ##             sum(rate(http_requests_total{status=~"5.."}[5m]))
+    ##             /
+    ##             sum(rate(http_requests_total[5m]))
+    ##           ) > 0.05
+    ##         for: 5m
+    ##         labels:
+    ##           severity: critical
+    ##           component: api
+    ##         annotations:
+    ##           summary: "High HTTP 5xx error rate"
+    ##           description: "Error rate is {{ $value | humanizePercentage }}"
+    ##       - alert: ServiceDown
+    ##         expr: up{job="{{ include "common.names.fullname" . }}"} == 0
+    ##         for: 2m
+    ##         labels:
+    ##           severity: critical
+    ##         annotations:
+    ##           summary: "Service is down"
+    ##   - name: business-metrics
+    ##     rules:
+    ##       - alert: LowOrderRate
+    ##         expr: rate(orders_total[10m]) < 10
+    ##         for: 15m
+    ##         labels:
+    ##           severity: warning
+    ##         annotations:
+    ##           summary: "Order rate below threshold"
+    ##       - record: job:http_requests:rate5m
+    ##         expr: sum(rate(http_requests_total[5m])) by (job)
     ##
-    rules: []
+    groups: []
 

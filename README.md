@@ -37,6 +37,201 @@ helm install my-release ./universal
 
 Visit [Artifact Hub](https://artifacthub.io/packages/search?repo=universal-chart) for more installation options and documentation.
 
+## Monitoring and Alerting
+
+This chart supports Prometheus Operator CRDs for metrics collection and custom alerting.
+
+### Prerequisites
+
+- [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) or Prometheus Operator installed in your cluster
+- ServiceMonitor and PrometheusRule CRDs available
+
+### Enabling Metrics Collection
+
+To enable Prometheus metrics scraping via ServiceMonitor:
+
+```yaml
+metrics:
+  enabled: true
+  path: /metrics
+  port: ""  # Container port for metrics (optional, defaults to service port)
+
+  service:
+    port: 8081  # Service port for metrics endpoint
+
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+
+    # IMPORTANT: Labels must match your Prometheus serviceMonitorSelector
+    labels:
+      release: prometheus-operator  # Adjust to your Prometheus release name
+```
+
+### Creating Custom Alerts
+
+Define custom alerting rules using PrometheusRule CRD:
+
+```yaml
+metrics:
+  enabled: true
+
+  prometheusRule:
+    enabled: true
+
+    # IMPORTANT: Labels must match your Prometheus ruleSelector
+    additionalLabels:
+      release: prometheus-operator  # Adjust to your Prometheus release name
+      role: alert-rules
+
+    # Define multiple rule groups
+    groups:
+      # Application availability alerts
+      - name: application-availability
+        interval: 30s
+        rules:
+          - alert: HighErrorRate
+            expr: |
+              (
+                sum(rate(http_requests_total{status=~"5.."}[5m]))
+                /
+                sum(rate(http_requests_total[5m]))
+              ) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              component: api
+            annotations:
+              summary: "High HTTP 5xx error rate"
+              description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+              runbook_url: "https://runbooks.example.com/high-error-rate"
+
+          - alert: ServiceDown
+            expr: up == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service is down"
+              description: "{{ $labels.instance }} has been down for more than 2 minutes"
+
+      # Performance alerts
+      - name: application-performance
+        rules:
+          - alert: HighLatency
+            expr: |
+              histogram_quantile(0.95,
+                sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+              ) > 1
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High request latency"
+              description: "P95 latency is {{ $value }}s (threshold: 1s)"
+
+      # Business metrics alerts
+      - name: business-metrics
+        interval: 1m
+        rules:
+          - alert: LowOrderRate
+            expr: rate(orders_total[10m]) < 10
+            for: 15m
+            labels:
+              severity: warning
+              team: business
+            annotations:
+              summary: "Order rate is below threshold"
+              description: "Current rate: {{ $value | humanize }} orders/sec"
+
+          # Recording rule example
+          - record: job:http_requests:rate5m
+            expr: sum(rate(http_requests_total[5m])) by (job)
+```
+
+### Important Configuration Notes
+
+#### 1. Label Selectors
+
+For Prometheus Operator to discover your ServiceMonitor and PrometheusRule resources, their labels must match the selectors configured in your Prometheus CR.
+
+**Find your Prometheus selectors:**
+
+```bash
+# Check serviceMonitorSelector
+kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitorSelector}'
+
+# Check ruleSelector
+kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.ruleSelector}'
+```
+
+Common configurations:
+- **kube-prometheus-stack**: `release: <your-prometheus-release-name>`
+- **prometheus-operator**: `prometheus: kube-prometheus`
+
+#### 2. Rule Group Organization
+
+Organize your alerts into logical groups:
+- **application-availability**: Uptime, error rates, health checks
+- **application-performance**: Latency, throughput, resource usage
+- **business-metrics**: Business KPIs, custom metrics, SLOs
+
+Each group can have its own evaluation `interval`.
+
+#### 3. Alert Severity Levels
+
+Use consistent severity labels:
+- `critical`: Requires immediate action, affects users
+- `warning`: Should be addressed soon, potential issues
+- `info`: Informational, no action required
+
+#### 4. Annotations Best Practices
+
+Include helpful context in annotations:
+- `summary`: Short description of the alert
+- `description`: Detailed information with templated values
+- `runbook_url`: Link to remediation documentation
+- `dashboard_url`: Link to relevant Grafana dashboard
+
+### Complete Example
+
+```yaml
+metrics:
+  enabled: true
+  path: /metrics
+
+  service:
+    port: 8081
+
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: prometheus-operator
+    relabelings:
+      - sourceLabels: [__meta_kubernetes_pod_node_name]
+        targetLabel: node
+
+  prometheusRule:
+    enabled: true
+    additionalLabels:
+      release: prometheus-operator
+      role: alert-rules
+    groups:
+      - name: my-app-alerts
+        interval: 30s
+        rules:
+          - alert: HighErrorRate
+            expr: rate(http_errors_total[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate detected"
+              description: "Error rate: {{ $value | humanizePercentage }}"
+```
+
 ## Requirements
 
 | Repository | Name | Version |
@@ -108,13 +303,14 @@ Visit [Artifact Hub](https://artifacthub.io/packages/search?repo=universal-chart
 | lifecycleHooks | object | `{}` |  |
 | livenessProbe | object | `{}` |  |
 | metrics.enabled | bool | `false` |  |
+| metrics.path | string | `"/metrics"` |  |
 | metrics.port | string | `""` |  |
 | metrics.prometheusRule.additionalLabels | object | `{}` |  |
 | metrics.prometheusRule.enabled | bool | `false` |  |
+| metrics.prometheusRule.groups | list | `[]` |  |
 | metrics.prometheusRule.namespace | string | `""` |  |
-| metrics.prometheusRule.rules | list | `[]` |  |
 | metrics.service.annotations."prometheus.io/path" | string | `"/metrics"` |  |
-| metrics.service.annotations."prometheus.io/port" | string | `"{{ .Values.metrics.service.port }}"` |  |
+| metrics.service.annotations."prometheus.io/port" | string | `"8081"` |  |
 | metrics.service.annotations."prometheus.io/scrape" | string | `"true"` |  |
 | metrics.service.port | int | `8081` |  |
 | metrics.serviceMonitor.enabled | bool | `false` |  |
