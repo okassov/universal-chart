@@ -5,11 +5,18 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
+env:
+  REGISTRY: ghcr.io
+  CHART_NAME: universal
+
 jobs:
   release:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+      packages: write
+      id-token: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,27 +28,61 @@ jobs:
         with:
           version: v3.14.0
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          CHART_VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $CHART_VERSION"
+
+      - name: Verify Chart.yaml version matches tag
+        run: |
+          TAG_VERSION=${{ steps.version.outputs.version }}
+          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+          if [ "$TAG_VERSION" != "$CHART_VERSION" ]; then
+            echo "Error: Tag version ($TAG_VERSION) does not match Chart.yaml version ($CHART_VERSION)"
+            exit 1
+          fi
+          echo "Version check passed: $CHART_VERSION"
+
       - name: Lint Chart
         run: helm lint ./
 
       - name: Package Chart
         run: |
-          helm package ./ -d ./charts/
-          CHART_VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
-          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+          helm package ./
+          echo "CHART_PACKAGE=${{ env.CHART_NAME }}-${{ steps.version.outputs.version }}.tgz" >> $GITHUB_ENV
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "$GITHUB_ACTOR"
-          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
 
-      - name: Update Chart Repository
+      - name: Push Chart to GHCR
         run: |
-          git clone --branch gh-pages https://github.com/${{ github.repository }}.git chart-repo
-          mkdir -p chart-repo/charts
-          mv ./charts/*.tgz chart-repo/charts/
-          cd chart-repo
-          helm repo index ./ --url https://raw.githubusercontent.com/${{ github.repository }}/gh-pages/
-          git add .
-          git commit -m "Add chart version ${{ env.CHART_VERSION }}"
-          git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages
+          helm push ${{ env.CHART_PACKAGE }} oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: ${{ env.CHART_PACKAGE }}
+          body: |
+            ## Installation
+
+            ### Using OCI Registry (Recommended)
+            ```bash
+            helm install my-release oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts/${{ env.CHART_NAME }} --version ${{ steps.version.outputs.version }}
+            ```
+
+            ### Using Helm Pull
+            ```bash
+            helm pull oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts/${{ env.CHART_NAME }} --version ${{ steps.version.outputs.version }}
+            ```
+
+            ### View on Artifact Hub
+            https://artifacthub.io/packages/helm/${{ github.repository_owner }}/${{ env.CHART_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Logout from GHCR
+        if: always()
+        run: helm registry logout ${{ env.REGISTRY }}

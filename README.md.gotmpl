@@ -1,0 +1,45 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+## Installation
+
+### Using OCI Registry (Recommended)
+
+The chart is available as an OCI artifact in GitHub Container Registry:
+
+```bash
+# Install the chart
+helm install my-release oci://ghcr.io/okassov/charts/universal --version {{ template "chart.version" . }}
+
+# Install with custom values
+helm install my-release oci://ghcr.io/okassov/charts/universal --version {{ template "chart.version" . }} -f values.yaml
+
+# Upgrade
+helm upgrade my-release oci://ghcr.io/okassov/charts/universal --version {{ template "chart.version" . }}
+```
+
+### Using Helm Pull
+
+```bash
+# Download the chart
+helm pull oci://ghcr.io/okassov/charts/universal --version {{ template "chart.version" . }}
+
+# Extract and install
+tar -xzf universal-{{ template "chart.version" . }}.tgz
+helm install my-release ./universal
+```
+
+### View on Artifact Hub
+
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/universal)](https://artifacthub.io/packages/helm/okassov/universal)
+
+Visit [Artifact Hub](https://artifacthub.io/packages/helm/okassov/universal) for more installation options and documentation.
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

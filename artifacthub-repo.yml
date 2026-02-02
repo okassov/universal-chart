@@ -1,0 +1,14 @@
+# Artifact Hub repository metadata file
+# https://artifacthub.io/docs/topics/repositories/
+repositoryID: # Will be assigned by Artifact Hub after registration
+owners:
+  - name: okassov
+    email: okassov@users.noreply.github.com
+
+# Optional: ignore specific files/directories from being tracked
+# ignore:
+#   - example-values
+
+# Optional: security report email
+# security:
+#   reportURL: https://github.com/okassov/universal-chart/security/advisories/new
