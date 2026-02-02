@@ -1,0 +1,39 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching, relative path matching, and
+# negation (prefixed with !). Only one pattern per line.
+.DS_Store
+
+# Common VCS dirs
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Common backup files
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+# Various IDEs
+.project
+.idea/
+*.tmproj
+.vscode/
+
+# Claude Code
+.claude/
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Documentation (optional - remove if you want docs in package)
+*.md
+OWNERS
+LICENSE
+
+# Testing
+.kube-linter.yaml
