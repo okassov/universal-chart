@@ -1,6 +1,6 @@
 # Artifact Hub repository metadata file
 # https://artifacthub.io/docs/topics/repositories/
-repositoryID: # Will be assigned by Artifact Hub after registration
+repositoryID: d8acb039-40a5-481d-874a-356a8617db88
 owners:
   - name: okassov
     email: okassov@users.noreply.github.com

@@ -30,8 +30,10 @@
 .travis.yml
 .circleci/
 
-# Documentation (optional - remove if you want docs in package)
-*.md
+# Documentation - README.md is included for users and Artifact Hub
+# Uncomment to exclude other markdown files if needed:
+# CHANGELOG.md
+# CONTRIBUTING.md
 OWNERS
 LICENSE
 

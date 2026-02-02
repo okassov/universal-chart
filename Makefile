@@ -32,6 +32,10 @@ bump-version: ## Update version in Chart.yaml (Usage: make bump-version VERSION=
 	@sed -i.bak 's/^version: .*/version: $(VERSION)/' $(CHART_FILE)
 	@sed -i.bak 's/^appVersion: .*/appVersion: $(VERSION)/' $(CHART_FILE)
 	@rm -f $(CHART_FILE).bak
+	@echo "$(GREEN)Updating charts/common/Chart.yaml to version $(VERSION)$(NC)"
+	@sed -i.bak 's/^version: .*/version: $(VERSION)/' charts/common/Chart.yaml
+	@sed -i.bak 's/^appVersion: .*/appVersion: $(VERSION)/' charts/common/Chart.yaml
+	@rm -f charts/common/Chart.yaml.bak
 	@if command -v helm-docs >/dev/null 2>&1; then \
 		echo "$(GREEN)Regenerating README.md$(NC)"; \
 		helm-docs; \
@@ -67,7 +71,7 @@ release: ## Create a new release (Usage: make release VERSION=1.6.0)
 	fi
 	@$(MAKE) bump-version VERSION=$(VERSION)
 	@echo "$(GREEN)Committing changes$(NC)"
-	@git add $(CHART_FILE) README.md charts/common/README.md 2>/dev/null || git add $(CHART_FILE) README.md 2>/dev/null || git add $(CHART_FILE)
+	@git add $(CHART_FILE) charts/common/Chart.yaml README.md charts/common/README.md 2>/dev/null || git add $(CHART_FILE) charts/common/Chart.yaml README.md 2>/dev/null || git add $(CHART_FILE) charts/common/Chart.yaml
 	@git commit -m "chore: bump version to $(VERSION)" -m "" -m "Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 	@echo "$(GREEN)Creating tag $(VERSION)$(NC)"
 	@git tag -a $(VERSION) -m "Release $(VERSION)"
