@@ -1,52 +1,104 @@
-CHART NAME: {{ .Chart.Name }}
-CHART VERSION: {{ .Chart.Version }}
-APP VERSION: {{ .Chart.AppVersion }}
+═══════════════════════════════════════════════════════════════════════════════
+  Successfully deployed: {{ include "common.names.fullname" . }}
+═══════════════════════════════════════════════════════════════════════════════
 
-** Please be patient while the chart is being deployed **
+Chart:       {{ .Chart.Name }}
+Version:     {{ .Chart.Version }}
+App Version: {{ .Chart.AppVersion }}
+Namespace:   {{ .Release.Namespace }}
+Release:     {{ .Release.Name }}
 
-NGINX can be accessed through the following DNS name from within your cluster:
+** Please wait while the application is being deployed **
+
+───────────────────────────────────────────────────────────────────────────────
+📡 SERVICE ACCESS
+───────────────────────────────────────────────────────────────────────────────
+
+Internal DNS (within cluster):
 {{- if and .Values.service.ports (gt (len .Values.service.ports) 0) }}
-
-    {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }} (port {{ (index .Values.service.ports 0).port }})
+  {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:{{ (index .Values.service.ports 0).port }}
 {{- else }}
-
-    {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
+  {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}
 {{- end }}
-
-To access NGINX from outside the cluster, follow the steps below:
 
 {{- if .Values.ingress.enabled }}
 
-1. Get the NGINX URL and associate its hostname to your cluster external IP:
-
-   export CLUSTER_IP=$(minikube ip) # On Minikube. Use: `kubectl cluster-info` on others K8s clusters
-   echo "NGINX URL: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.hostname }}"
-   echo "$CLUSTER_IP  {{ .Values.ingress.hostname }}" | sudo tee -a /etc/hosts
-
+External Access (via Ingress):
+{{- if .Values.ingress.hostname }}
+  URL: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.hostname }}
+{{- else }}
+  Check ingress hosts with:
+  kubectl get ingress --namespace {{ .Release.Namespace }} {{ include "common.names.fullname" . }}
+{{- end }}
 {{- else }}
 
-1. Get the Server URL by running these commands:
-
+External Access (via {{ .Values.service.type }}):
 {{- if contains "LoadBalancer" .Values.service.type }}
 
   NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-        Watch the status with: 'kubectl get svc --namespace {{ .Release.Namespace }} -w {{ include "common.names.fullname" . }}'
 
-    export SERVICE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].port}" services {{ include "common.names.fullname" . }})
+  Watch the status:
+    kubectl get svc --namespace {{ .Release.Namespace }} -w {{ include "common.names.fullname" . }}
+
+  Get the URL:
     export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "common.names.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    echo "http://${SERVICE_IP}:${SERVICE_PORT}"
+    export SERVICE_PORT=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "common.names.fullname" . }} -o jsonpath='{.spec.ports[0].port}')
+    echo "Application URL: http://${SERVICE_IP}:${SERVICE_PORT}"
 
-{{- else if contains "ClusterIP"  .Values.service.type }}
+{{- else if contains "ClusterIP" .Values.service.type }}
 
-    export SERVICE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].port}" services {{ include "common.names.fullname" . }})
-    kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "common.names.fullname" . }} ${SERVICE_PORT}:${SERVICE_PORT} &
-    echo "http://127.0.0.1:${SERVICE_PORT}"
+  Port-forward to access locally:
+    export SERVICE_PORT=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "common.names.fullname" . }} -o jsonpath='{.spec.ports[0].port}')
+    kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "common.names.fullname" . }} ${SERVICE_PORT}:${SERVICE_PORT}
+
+  Then access at: http://127.0.0.1:${SERVICE_PORT}
 
 {{- else if contains "NodePort" .Values.service.type }}
 
-    export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "common.names.fullname" . }})
-    export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
-    echo "http://${NODE_IP}:${NODE_PORT}"
+  Get the NodePort and Node IP:
+    export NODE_PORT=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "common.names.fullname" . }} -o jsonpath='{.spec.ports[0].nodePort}')
+    export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+    echo "Application URL: http://${NODE_IP}:${NODE_PORT}"
 
 {{- end }}
 {{- end }}
+
+───────────────────────────────────────────────────────────────────────────────
+🔍 STATUS & MONITORING
+───────────────────────────────────────────────────────────────────────────────
+
+Check deployment status:
+  kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.names.name" . }}
+
+View logs:
+  kubectl logs --namespace {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.names.name" . }} --tail=100 -f
+{{- if .Values.metrics.enabled }}
+
+Metrics endpoint:
+  {{ include "common.names.fullname" . }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:{{ .Values.metrics.service.port }}{{ .Values.metrics.path }}
+{{- if .Values.metrics.serviceMonitor.enabled }}
+
+Prometheus ServiceMonitor: ✓ Enabled
+  Your metrics will be automatically scraped by Prometheus Operator
+{{- end }}
+{{- if .Values.prometheusRule.enabled }}
+
+Prometheus Alerts: ✓ Enabled
+  Custom alerts are configured in PrometheusRule
+{{- end }}
+{{- end }}
+
+───────────────────────────────────────────────────────────────────────────────
+📚 RESOURCES
+───────────────────────────────────────────────────────────────────────────────
+
+Chart documentation:
+  https://github.com/okassov/universal-chart
+
+Report issues:
+  https://github.com/okassov/universal-chart/issues
+
+Artifact Hub:
+  https://artifacthub.io/packages/helm/okassov/universal
+
+═══════════════════════════════════════════════════════════════════════════════
