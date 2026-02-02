@@ -1,6 +1,6 @@
 # universal
 
-![Version: 1.7.0](https://img.shields.io/badge/Version-1.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.7.0](https://img.shields.io/badge/AppVersion-1.7.0-informational?style=flat-square)
+![Version: 1.8.0](https://img.shields.io/badge/Version-1.8.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.8.0](https://img.shields.io/badge/AppVersion-1.8.0-informational?style=flat-square)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/universal-chart)](https://artifacthub.io/packages/search?repo=universal-chart)
 
 Universal helm chart for business services
@@ -13,23 +13,23 @@ The chart is available as an OCI artifact in GitHub Container Registry:
 
 ```bash
 # Install the chart
-helm install my-release oci://ghcr.io/okassov/charts/universal --version 1.7.0
+helm install my-release oci://ghcr.io/okassov/charts/universal --version 1.8.0
 
 # Install with custom values
-helm install my-release oci://ghcr.io/okassov/charts/universal --version 1.7.0 -f values.yaml
+helm install my-release oci://ghcr.io/okassov/charts/universal --version 1.8.0 -f values.yaml
 
 # Upgrade
-helm upgrade my-release oci://ghcr.io/okassov/charts/universal --version 1.7.0
+helm upgrade my-release oci://ghcr.io/okassov/charts/universal --version 1.8.0
 ```
 
 ### Using Helm Pull
 
 ```bash
 # Download the chart
-helm pull oci://ghcr.io/okassov/charts/universal --version 1.7.0
+helm pull oci://ghcr.io/okassov/charts/universal --version 1.8.0
 
 # Extract and install
-tar -xzf universal-1.7.0.tgz
+tar -xzf universal-1.8.0.tgz
 helm install my-release ./universal
 ```
 
@@ -273,6 +273,7 @@ metrics:
 | containerSecurityContext.runAsUser | int | `1001` |  |
 | containerSecurityContext.seLinuxOptions | object | `{}` |  |
 | containerSecurityContext.seccompProfile.type | string | `"RuntimeDefault"` |  |
+| cronjobs | list | `[]` |  |
 | dnsConfig | object | `{}` |  |
 | dnsPolicy | string | `""` |  |
 | env | list | `[]` |  |
